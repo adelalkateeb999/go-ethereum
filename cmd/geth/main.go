@@ -151,7 +151,7 @@ var (
 		utils.MinerNotifyFullFlag,
 		utils.IgnoreLegacyReceiptsFlag,
 		configFileFlag,
-	}, utils.NetworkFlags, utils.DatabasePathFlags)
+	}, utils.NetworkFlags, utils.DatabasePathFlags, utils.StateSchemeFlags)
 
 	rpcFlags = []cli.Flag{
 		utils.HTTPEnabledFlag,

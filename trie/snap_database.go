@@ -194,7 +194,7 @@ func (db *snapDatabase) Update(root common.Hash, parentRoot common.Hash, nodes *
 	}
 	var limit uint64
 	if db.config != nil {
-		limit = db.config.StateLimit
+		limit = db.config.StateHistory
 	}
 	// Keep 128 diff layers in the memory, persistent layer is 129th.
 	// - head layer is paired with HEAD state
@@ -218,7 +218,7 @@ func (db *snapDatabase) Commit(root common.Hash, report bool) error {
 	}
 	var limit uint64
 	if db.config != nil {
-		limit = db.config.StateLimit
+		limit = db.config.StateHistory
 	}
 	return db.tree.cap(root, 0, db.freezer, limit)
 }
@@ -424,18 +424,17 @@ func (db *snapDatabase) Size() (size common.StorageSize) {
 	return size
 }
 
-// IsEmpty returns an indicator if the node database is empty.
-// Snap database is only regarded as empty if none of the layers
-// points to a non-empty state.
-func (db *snapDatabase) IsEmpty() bool {
-	var nonempty bool
+// Initialized returns an indicator if the state data is already
+// initialized in path-based scheme.
+func (db *snapDatabase) Initialized(genesisRoot common.Hash) bool {
+	var inited bool
 	db.tree.forEach(func(_ common.Hash, layer snapshot) bool {
 		if layer.Root() != emptyRoot {
-			nonempty = true
+			inited = true
 		}
 		return true
 	})
-	return !nonempty
+	return inited
 }
 
 // SetCacheSize sets the dirty cache size to the provided value(in mega-bytes).
