@@ -195,16 +195,3 @@ func DeleteTrieJournal(db ethdb.KeyValueWriter) {
 		log.Crit("Failed to remove tries journal", "err", err)
 	}
 }
-
-// WriteStateHistory writes the provided reverse diff to database. Calculate the
-// real position of reverse diff in freezer by minus one since the first reverse
-// diff is started from one(zero for empty state).
-func WriteStateHistory(db ethdb.AncientWriter, id uint64, aIndex []byte, sIndex []byte, aData []byte, sData []byte) {
-	db.ModifyAncients(func(op ethdb.AncientWriteOp) error {
-		op.AppendRaw(stateHistoryAccountIndex, id-1, aIndex)
-		op.AppendRaw(stateHistoryStorageIndex, id-1, sIndex)
-		op.AppendRaw(stateHistoryAccountData, id-1, aData)
-		op.AppendRaw(stateHistoryStorageData, id-1, sData)
-		return nil
-	})
-}

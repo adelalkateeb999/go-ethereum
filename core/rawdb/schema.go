@@ -108,6 +108,9 @@ var (
 	trieNodeAccountPrefix = []byte("A") // trieNodeAccountPrefix + hexPath -> trie node
 	trieNodeStoragePrefix = []byte("O") // trieNodeStoragePrefix + accountHash + hexPath -> trie node
 
+	AccountIndexPrefix = []byte("P") // AccountIndexPrefix + accountHash -> numbers
+	StorageIndexPrefix = []byte("Q") // StorageIndexPrefix + accountHash + storageHash -> numbers
+
 	reverseDiffLookupPrefix = []byte("RL")    // reverseDiffLookupPrefix + state root -> reverse diff id
 	reverseDiffHeadKey      = []byte("RHead") // reverseDiffHeadKey tracks the latest reverse-diff id
 
@@ -244,6 +247,16 @@ func accountTrieNodeKey(path []byte) []byte {
 // storageTrieNodeKey = trieNodeStoragePrefix + accountHash + nodePath.
 func storageTrieNodeKey(accountHash common.Hash, path []byte) []byte {
 	return append(append(trieNodeStoragePrefix, accountHash.Bytes()...), path...)
+}
+
+// accountTrieNodeKey = trieNodeAccountPrefix + nodePath.
+func accountIndexNodeKey(accountHash common.Hash) []byte {
+	return append(AccountIndexPrefix, accountHash.Bytes()...)
+}
+
+// storageTrieNodeKey = trieNodeStoragePrefix + accountHash + nodePath.
+func storageIndexNodeKey(accountHash common.Hash, slotHash common.Hash) []byte {
+	return append(append(StorageIndexPrefix, accountHash.Bytes()...), slotHash.Bytes()...)
 }
 
 // IsLegacyTrieNode reports whether a provided database entry is a legacy trie
