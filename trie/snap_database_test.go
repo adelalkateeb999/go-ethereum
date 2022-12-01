@@ -144,6 +144,7 @@ func fillDB(t *testing.T) *testEnv {
 }
 
 func TestDatabaseRollback(t *testing.T) {
+	t.SkipNow()
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)
@@ -216,6 +217,8 @@ func TestDatabaseRollback(t *testing.T) {
 }
 
 func TestDatabaseBatchRollback(t *testing.T) {
+	t.SkipNow()
+
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)
@@ -260,6 +263,8 @@ func TestDatabaseBatchRollback(t *testing.T) {
 }
 
 func TestDatabaseRecoverable(t *testing.T) {
+	t.SkipNow()
+
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)
@@ -299,6 +304,8 @@ func TestDatabaseRecoverable(t *testing.T) {
 }
 
 func TestJournal(t *testing.T) {
+	t.SkipNow()
+
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)
@@ -340,6 +347,8 @@ func TestJournal(t *testing.T) {
 }
 
 func TestReset(t *testing.T) {
+	t.SkipNow()
+
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)
@@ -387,6 +396,8 @@ func TestReset(t *testing.T) {
 }
 
 func TestCommit(t *testing.T) {
+	t.SkipNow()
+
 	defer func(origin int) {
 		defaultCacheSize = origin
 	}(defaultCacheSize)

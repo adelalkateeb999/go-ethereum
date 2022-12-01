@@ -263,7 +263,7 @@ func resolvePrevLeaves(nodes map[string]*nodeWithPrev, callback func(path []byte
 		if len(tip.prev) == 0 {
 			return nil
 		}
-		n := mustDecodeNodeUnsafe(crypto.Keccak256(tip.prev), tip.prev)
+		n := mustDecodeNode(crypto.Keccak256(tip.prev), tip.prev)
 		return resolve([]byte(prefix), n, callback)
 	})
 }

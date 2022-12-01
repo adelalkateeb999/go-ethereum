@@ -206,7 +206,7 @@ func BenchmarkPersist(b *testing.B) {
 		if !ok {
 			break
 		}
-		dl.persist(nil, 0, false)
+		dl.persist(nil, nil, 0, false)
 	}
 }
 
