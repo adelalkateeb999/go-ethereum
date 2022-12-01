@@ -163,7 +163,7 @@ func TestDatabaseRollback(t *testing.T) {
 	// Ensure all the reverse diffs are stored properly
 	var parent = emptyRoot
 	for i := 0; i <= index; i++ {
-		diff, err := loadReverseDiff(db.freezer, uint64(i+1))
+		diff, err := loadReverseDiff(db.trieHistory, uint64(i+1))
 		if err != nil {
 			t.Errorf("Failed to load reverse diff, index %d, err %v", i+1, err)
 		}
@@ -371,7 +371,7 @@ func TestReset(t *testing.T) {
 	}
 	// Ensure all reverse diffs are nuked
 	for i := 0; i <= index; i++ {
-		_, err := loadReverseDiff(db.freezer, uint64(i+1))
+		_, err := loadReverseDiff(db.trieHistory, uint64(i+1))
 		if err == nil {
 			t.Fatalf("Failed to clean reverse diff, index %d", i+1)
 		}

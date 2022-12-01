@@ -171,13 +171,13 @@ func (dl *diffLayer) Update(blockRoot common.Hash, id uint64, nodes map[common.H
 // Note this function can destruct the ancestor layers(mark them as stale)
 // of the given diff layer, please ensure prevent state access operation
 // to this layer through any **descendant layer**.
-func (dl *diffLayer) persist(freezer *rawdb.Freezer, statelimit uint64, force bool) (snapshot, error) {
+func (dl *diffLayer) persist(freezer, stateHistory *rawdb.Freezer, statelimit uint64, force bool) (snapshot, error) {
 	parent, ok := dl.Parent().(*diffLayer)
 	if ok {
 		// Hold the lock to prevent any read operation until the new
 		// parent is linked correctly.
 		dl.lock.Lock()
-		result, err := parent.persist(freezer, statelimit, force)
+		result, err := parent.persist(freezer, stateHistory, statelimit, force)
 		if err != nil {
 			dl.lock.Unlock()
 			return nil, err
@@ -185,15 +185,15 @@ func (dl *diffLayer) persist(freezer *rawdb.Freezer, statelimit uint64, force bo
 		dl.parent = result
 		dl.lock.Unlock()
 	}
-	return diffToDisk(freezer, statelimit, dl, force)
+	return diffToDisk(freezer, stateHistory, statelimit, dl, force)
 }
 
 // diffToDisk merges a bottom-most diff into the persistent disk layer underneath
 // it. The method will panic if called onto a non-bottom-most diff layer.
-func diffToDisk(freezer *rawdb.Freezer, statelimit uint64, bottom *diffLayer, force bool) (snapshot, error) {
+func diffToDisk(freezer *rawdb.Freezer, stateHistory *rawdb.Freezer, statelimit uint64, bottom *diffLayer, force bool) (snapshot, error) {
 	switch layer := bottom.Parent().(type) {
 	case *diskLayer:
-		return layer.commit(freezer, statelimit, bottom, force)
+		return layer.commit(freezer, stateHistory, statelimit, bottom, force)
 	case *diskLayerSnapshot:
 		return layer.commit(bottom)
 	default:

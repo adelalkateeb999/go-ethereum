@@ -47,10 +47,10 @@ func (db *Database) GetSnapshot(root common.Hash) (*DatabaseSnapshot, error) {
 	if !ok {
 		return nil, errors.New("not supported")
 	}
-	if backend.freezer == nil {
+	if backend.trieHistory == nil {
 		return nil, errors.New("unrecoverable trie database")
 	}
-	snap, err := backend.tree.bottom().(*diskLayer).GetSnapshot(root, backend.freezer)
+	snap, err := backend.tree.bottom().(*diskLayer).GetSnapshot(root, backend.trieHistory)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +88,7 @@ func (snap *DatabaseSnapshot) Update(root common.Hash, parent common.Hash, nodes
 	// - head-1 layer is paired with HEAD-1 state
 	// - head-127 layer(bottom-most diff layer) is paired with HEAD-127 state
 	// - head-128 layer(disk layer) is paired with HEAD-128 state
-	return snap.tree.cap(root, maxDiffLayerDepth, nil, 0)
+	return snap.tree.cap(root, maxDiffLayerDepth, nil, nil, 0)
 }
 
 // Hold increases the snapshot references to prevent accidental releasing.

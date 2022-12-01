@@ -87,18 +87,18 @@ func inspectFreezers(db ethdb.Database) ([]freezerInfo, error) {
 			}
 			infos = append(infos, info)
 
-		case rdiffFreezerName:
+		case trieHistoryFreezerName:
 			datadir, err := db.AncientDatadir()
 			if err != nil {
 				return nil, err
 			}
-			f, err := NewReverseDiffFreezer(datadir, true)
+			f, err := NewTrieHistoryFreezer(datadir, true)
 			if err != nil {
 				return nil, err
 			}
 			defer f.Close()
 
-			info, err := inspect(rdiffFreezerName, reverseDiffFreezerNoSnappy, f)
+			info, err := inspect(trieHistoryFreezerName, trieHistoryFreezerNoSnappy, f)
 			if err != nil {
 				return nil, err
 			}

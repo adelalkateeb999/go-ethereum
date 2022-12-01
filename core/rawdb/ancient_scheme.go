@@ -47,8 +47,8 @@ var chainFreezerNoSnappy = map[string]bool{
 }
 
 const (
-	// reverseDiffTableSize defines the maximum size of freezer data files.
-	reverseDiffTableSize = 2 * 1000 * 1000 * 1000
+	// trieHistoryTableSize defines the maximum size of freezer data files.
+	trieHistoryTableSize = 2 * 1000 * 1000 * 1000
 
 	// freezerReverseDiffTable indicates the name of the freezer reverse diff table.
 	freezerReverseDiffTable = "rdiffs"
@@ -57,23 +57,47 @@ const (
 	freezerReverseDiffHashTable = "rdiff.hashes"
 )
 
-// ReveseDiffFreezerNoSnappy configures whether compression is disabled for the ancient
+// trieHistoryFreezerNoSnappy configures whether compression is disabled for the ancient
 // reverse diffs.
-var reverseDiffFreezerNoSnappy = map[string]bool{
+var trieHistoryFreezerNoSnappy = map[string]bool{
 	freezerReverseDiffTable:     false,
 	freezerReverseDiffHashTable: true,
 }
 
+const (
+	// stateHistoryTableSize defines the maximum size of freezer data files.
+	stateHistoryTableSize = 2 * 1000 * 1000 * 1000
+
+	// stateHistoryAccountIndex indicates the name of the freezer reverse diff table.
+	stateHistoryAccountIndex = "account.index"
+	stateHistoryStorageIndex = "storage.index"
+	stateHistoryAccountData  = "account.data"
+	stateHistoryStorageData  = "storage.data"
+)
+
+var stateHistoryFreezerNoSnappy = map[string]bool{
+	stateHistoryAccountIndex: false,
+	stateHistoryStorageIndex: false,
+	stateHistoryAccountData:  false,
+	stateHistoryStorageData:  false,
+}
+
 // The list of identifiers of ancient stores.
 var (
-	chainFreezerName = "chain" // the folder name of chain segment ancient store.
-	rdiffFreezerName = "rdiff" // the folder name of reverse diff ancient store.
+	chainFreezerName        = "chain"        // the folder name of chain segment ancient store.
+	trieHistoryFreezerName  = "triehistory"  // the folder name of reverse diff ancient store.
+	stateHistoryFreezerName = "statehistory" // the folder name of reverse diff ancient store.
 )
 
 // freezers the collections of all builtin freezers.
-var freezers = []string{chainFreezerName, rdiffFreezerName}
+var freezers = []string{chainFreezerName, trieHistoryFreezerName, stateHistoryFreezerName}
 
-// NewReverseDiffFreezer initializes the freezer for reverse diffs.
-func NewReverseDiffFreezer(ancientDir string, readOnly bool) (*Freezer, error) {
-	return NewFreezer(filepath.Join(ancientDir, rdiffFreezerName), "eth/db/rdiff", readOnly, reverseDiffTableSize, reverseDiffFreezerNoSnappy)
+// NewTrieHistoryFreezer initializes the freezer for reverse diffs.
+func NewTrieHistoryFreezer(ancientDir string, readOnly bool) (*Freezer, error) {
+	return NewFreezer(filepath.Join(ancientDir, trieHistoryFreezerName), "eth/db/triehistory", readOnly, trieHistoryTableSize, trieHistoryFreezerNoSnappy)
+}
+
+// NewStateHistoryFreezer initializes the freezer for reverse diffs.
+func NewStateHistoryFreezer(ancientDir string, readOnly bool) (*Freezer, error) {
+	return NewFreezer(filepath.Join(ancientDir, stateHistoryFreezerName), "eth/db/triehistory", readOnly, stateHistoryTableSize, stateHistoryFreezerNoSnappy)
 }

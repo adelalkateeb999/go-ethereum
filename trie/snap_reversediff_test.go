@@ -89,7 +89,7 @@ func TestLoadStoreReverseDiff(t *testing.T) {
 	if err != nil {
 		panic("Failed to create database")
 	}
-	freezer, _ := openFreezer(path.Join(ancient, "freezer"), false)
+	freezer, _ := openFreezer(path.Join(ancient, "trieHistory"), false)
 
 	var diffs = makeDiffs(10)
 	for i := 0; i < len(diffs); i++ {
@@ -157,7 +157,7 @@ func TestTruncateHeadReverseDiff(t *testing.T) {
 	if err != nil {
 		panic("Failed to create database")
 	}
-	freezer, _ := openFreezer(path.Join(ancient, "freezer"), false)
+	freezer, _ := openFreezer(path.Join(ancient, "trieHistory"), false)
 
 	var (
 		diffs   = makeDiffs(10)
@@ -192,7 +192,7 @@ func TestTruncateTailReverseDiff(t *testing.T) {
 	if err != nil {
 		panic("Failed to create database")
 	}
-	freezer, _ := openFreezer(path.Join(ancient, "freezer"), false)
+	freezer, _ := openFreezer(path.Join(ancient, "trieHistory"), false)
 
 	var (
 		diffs   = makeDiffs(10)
@@ -242,7 +242,7 @@ func TestTruncateTailReverseDiffs(t *testing.T) {
 		if err != nil {
 			panic("Failed to create database")
 		}
-		freezer, _ := openFreezer(path.Join(ancient, "freezer"), false)
+		freezer, _ := openFreezer(path.Join(ancient, "trieHistory"), false)
 
 		var (
 			diffs   = makeDiffs(10)
@@ -280,7 +280,7 @@ func TestRepairReverseDiff(t *testing.T) {
 		if err != nil {
 			panic("Failed to create database")
 		}
-		freezer, _ := openFreezer(path.Join(ancient, "freezer"), false)
+		freezer, _ := openFreezer(path.Join(ancient, "trieHistory"), false)
 
 		var (
 			diffs   = makeDiffs(10)
@@ -329,5 +329,5 @@ func TestRepairReverseDiff(t *testing.T) {
 
 // openFreezer initializes the freezer instance for storing reverse diffs.
 func openFreezer(datadir string, readOnly bool) (*rawdb.Freezer, error) {
-	return rawdb.NewReverseDiffFreezer(datadir, readOnly)
+	return rawdb.NewTrieHistoryFreezer(datadir, readOnly)
 }
