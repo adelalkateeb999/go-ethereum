@@ -19,142 +19,133 @@ package trie
 import (
 	"bytes"
 	"encoding/binary"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 )
 
-// stateDiff represents a reverse change of a state data. The prev refers to the
-// content before the change is applied.
-type elementHistory struct {
+// stateHistory represents a state change(account, storage slot). The prev
+// refers to the content before the change is applied.
+type stateHistory struct {
 	Key  []byte // Hex format element key(e.g. account hash or slot location)
-	Prev []byte // Element value, nil means the node is previously non-existent
+	Prev []byte // RLP-encoded value, nil means the state is previously non-existent
 }
 
-type accountIndex struct {
+// accountMetadata describes the metadata belongs to an account history.
+type accountMetadata struct {
 	Hash       common.Hash
-	DataOffset uint32
-	DataLength uint32
+	Offset     uint32
+	Length     uint32
 	SlotOffset uint32
 	SlotNumber uint32
 }
 
-type accountIndexes []*accountIndex
+type accountIndexes []*accountMetadata
 
 func (is accountIndexes) encode() []byte {
-	var buf = new(bytes.Buffer)
-
+	var (
+		tmp [16]byte
+		buf = new(bytes.Buffer)
+	)
 	for _, index := range is {
-		buf.Write(index.Hash.Bytes()) // 32 bytes
-
-		var tmp [4]byte
-		binary.BigEndian.PutUint32(tmp[:], index.DataOffset)
-		buf.Write(tmp[:])
-		binary.BigEndian.PutUint32(tmp[:], index.DataLength)
-		buf.Write(tmp[:])
-		binary.BigEndian.PutUint32(tmp[:], index.SlotOffset)
-		buf.Write(tmp[:])
-		binary.BigEndian.PutUint32(tmp[:], index.SlotNumber)
+		buf.Write(index.Hash.Bytes())
+		binary.BigEndian.PutUint32(tmp[:4], index.Offset)
+		binary.BigEndian.PutUint32(tmp[4:8], index.Length)
+		binary.BigEndian.PutUint32(tmp[8:12], index.SlotOffset)
+		binary.BigEndian.PutUint32(tmp[12:], index.SlotNumber)
 		buf.Write(tmp[:])
 	}
 	return buf.Bytes()
 }
 
-type slotIndex struct {
-	Hash       common.Hash
-	DataOffset uint32
-	DataLength uint32
+type storageMetadata struct {
+	Hash   common.Hash
+	Offset uint32
+	Length uint32
 }
-type slotIndexes []*slotIndex
+type slotIndexes []*storageMetadata
 
 func (is slotIndexes) encode() []byte {
-	var buf = new(bytes.Buffer)
+	var (
+		tmp [8]byte
+		buf = new(bytes.Buffer)
+	)
 	for _, index := range is {
-		buf.Write(index.Hash.Bytes()) // 32 bytes
-
-		var tmp [4]byte
-		binary.BigEndian.PutUint32(tmp[:], index.DataOffset)
+		buf.Write(index.Hash.Bytes())
+		binary.BigEndian.PutUint32(tmp[:4], index.Offset)
+		binary.BigEndian.PutUint32(tmp[4:], index.Length)
 		buf.Write(tmp[:])
-		binary.BigEndian.PutUint32(tmp[:], index.DataLength)
 	}
 	return buf.Bytes()
 }
 
-func newSlotIndex(offset uint32, slots []elementHistory) ([]*slotIndex, []byte, uint32) {
+func newStorageMetadata(offset uint32, storage []stateHistory) ([]*storageMetadata, []byte, uint32) {
 	var (
-		data    []byte
-		indexes []*slotIndex
+		data  []byte
+		metas []*storageMetadata
 	)
-	for _, slot := range slots {
-		index := &slotIndex{
-			Hash:       common.BytesToHash(slot.Key),
-			DataOffset: offset,
-			DataLength: uint32(len(slot.Prev)),
+	for _, slot := range storage {
+		meta := &storageMetadata{
+			Hash:   common.BytesToHash(slot.Key),
+			Offset: offset,
+			Length: uint32(len(slot.Prev)),
 		}
-		indexes = append(indexes, index)
+		metas = append(metas, meta)
 		data = append(data, slot.Prev...)
 		offset += uint32(len(slot.Prev))
 	}
-	return indexes, data, offset
+	return metas, data, offset
 }
 
-func newAccountIndex(element elementHistory, accountOffset uint32, slotIndexes []*slotIndex, slotOffset uint32) (*accountIndex, uint32) {
-	return &accountIndex{
+func newAccountIndex(element stateHistory, accountOffset uint32, slotIndexes []*storageMetadata, slotOffset uint32) *accountMetadata {
+	return &accountMetadata{
 		Hash:       common.BytesToHash(element.Key),
-		DataOffset: accountOffset,
-		DataLength: uint32(len(element.Prev)),
+		Offset:     accountOffset,
+		Length:     uint32(len(element.Prev)),
 		SlotOffset: slotOffset,
 		SlotNumber: uint32(len(slotIndexes)),
-	}, accountOffset + uint32(len(element.Prev))
+	}
 }
 
-func newStateHistory(nodes map[common.Hash]map[string]*nodeWithPrev) ([]*accountIndex, []*slotIndex, []byte, []byte) {
+func newStateHistory(nodes map[common.Hash]map[string]*nodeWithPrev) ([]*accountMetadata, []*storageMetadata, []byte, []byte) {
 	var (
-		accounts    []common.Hash
-		accountBlob [][]byte
-		leaves      = make(map[common.Hash][]elementHistory)
+		leaves = make(map[common.Hash][]stateHistory)
 
-		accountData   []byte
-		slotData      []byte
-		accountOffset uint32
-		slotOffset    uint32
+		accountData    []byte
+		slotData       []byte
+		accountOffset  uint32
+		accountSlotOff uint32
+		slotOffset     uint32
 
-		accountIndexes []*accountIndex
-		slotIndexes    []*slotIndex
+		accountMetas []*accountMetadata
+		storageMetas []*storageMetadata
 	)
 	for owner, subset := range nodes {
-		var elements []elementHistory
+		var elements []stateHistory
 		resolvePrevLeaves(subset, func(path []byte, blob []byte) {
-			elements = append(elements, elementHistory{
+			elements = append(elements, stateHistory{
 				Key:  common.CopyBytes(path),
 				Prev: common.CopyBytes(blob),
 			})
 		})
 		leaves[owner] = elements
-
-		if owner == (common.Hash{}) {
-			for _, element := range elements {
-				accounts = append(accounts, common.BytesToHash(element.Key))
-				accountBlob = append(accountBlob, element.Prev)
-			}
-		}
 	}
-	for i, account := range accounts {
-		slots, ok := leaves[account]
-		if !ok {
-			// todo
-		}
-		sindexes, sdata, soffset := newSlotIndex(slotOffset, slots)
+	for _, element := range leaves[common.Hash{}] {
+		accountHash := common.BytesToHash(element.Key)
+		slots := leaves[accountHash]
+		sMeta, sdata, soffset := newStorageMetadata(slotOffset, slots)
 
-		aIndex, aoffset := newAccountIndex(leaves[account][i], accountOffset, sindexes, uint32(len(sindexes)))
-		accountIndexes = append(accountIndexes, aIndex)
-		accountOffset = aoffset
-		accountData = append(accountData, leaves[account][i].Prev...)
+		aMeta := newAccountIndex(element, accountOffset, sMeta, accountSlotOff)
+		accountMetas = append(accountMetas, aMeta)
+		accountOffset += uint32(len(element.Prev))
+		accountSlotOff += uint32(len(sMeta))
+		accountData = append(accountData, element.Prev...)
 
-		slotIndexes = append(slotIndexes, sindexes...)
+		storageMetas = append(storageMetas, sMeta...)
 		slotData = append(slotData, sdata...)
 		slotOffset = soffset
 	}
-	return accountIndexes, slotIndexes, accountData, slotData
+	return accountMetas, storageMetas, accountData, slotData
 }
 
 // storeReverseDiff constructs the reverse state diff for the passed bottom-most
@@ -162,9 +153,9 @@ func newStateHistory(nodes map[common.Hash]map[string]*nodeWithPrev) ([]*account
 // the stale reverse diffs from the disk with the given threshold.
 // This function will panic if it's called for non-bottom-most diff layer.
 func storeStateHistory(freezer *rawdb.Freezer, dl *diffLayer) error {
-	aIndexes, sIndexes, aData, sData := newStateHistory(dl.nodes)
-	aIndexEnc := accountIndexes(aIndexes).encode()
-	sIndexEnc := slotIndexes(sIndexes).encode()
+	aMeta, sMeta, aData, sData := newStateHistory(dl.nodes)
+	aIndexEnc := accountIndexes(aMeta).encode()
+	sIndexEnc := slotIndexes(sMeta).encode()
 
 	// The reverse diff object and the lookup are stored in two different
 	// places, so there is no atomicity guarantee. It's possible that reverse

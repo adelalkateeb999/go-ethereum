@@ -18,12 +18,12 @@ package trie
 
 import (
 	"fmt"
-	"github.com/ethereum/go-ethereum/crypto"
 	"reflect"
 	"sort"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // memoryNode is all the information we know about a single cached trie node
@@ -260,6 +260,7 @@ func resolve(prefix []byte, n node, callback func(path []byte, blob []byte)) err
 
 func resolvePrevLeaves(nodes map[string]*nodeWithPrev, callback func(path []byte, blob []byte)) error {
 	return forEachTipNode(nodes, func(prefix string, tip *nodeWithPrev) error {
+		fmt.Println("Prefix", []byte(prefix), "isPrevNil", len(tip.prev) == 0)
 		if len(tip.prev) == 0 {
 			return nil
 		}
